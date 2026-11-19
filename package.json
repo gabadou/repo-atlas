@@ -1,8 +1,22 @@
 {
   "name": "repo-atlas",
   "version": "0.1.0",
-  "private": true,
-  "description": "A 3D map of a repo’s architecture: folders as districts, files as buildings, imports as arcs.",
+  "description": "A 3D map of a repo’s architecture, laid out as a city: folders as districts, files as buildings, imports as arcs.",
+  "license": "MIT",
+  "author": "Alex Gabadou (https://studiog.build)",
+  "homepage": "https://github.com/gabadou/repo-atlas",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gabadou/repo-atlas.git"
+  },
+  "keywords": [
+    "architecture",
+    "visualization",
+    "code-city",
+    "3d",
+    "dependency-graph",
+    "three.js"
+  ],
   "type": "module",
   "bin": {
     "atlas": "bin/atlas.mjs"
@@ -12,6 +26,9 @@
     "serve": "node bin/atlas.mjs serve",
     "build": "node scripts/build.mjs",
     "map": "node bin/atlas.mjs"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "dependencies": {
     "three": "^0.170.0"

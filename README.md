@@ -1,11 +1,16 @@
 # repo atlas
 
-A 3D map of a repo's architecture. Point it at a folder; it reads the files and their imports and writes one self-contained HTML page you open in a browser (no server, works offline).
+A 3D map of a repo's architecture, laid out as a city. Point it at your code folder: it reads the files and their imports, and shows each project as a city you can turn, search and click. Everything runs on your computer.
 
 - **Folders are districts**: raised plates, nested one level per folder. A folder holding only one folder is merged into it (`app/src`).
 - **Files are buildings**: footprint and height grow with lines of code (non-blank lines; past 1,500 lines a building only grows a little, so a vendored file doesn't dwarf the city).
-- **Imports are arcs**: from the importer (orange end) to the imported file (blue end).
+- **Imports are arcs**: from the importer (orange) to the imported file (blue).
 - **Packages** (npm, `node`, Python modules, sibling repos reached with `../`) stand in their own district beside the city, as round towers sized by how many files use them.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-dark.png">
+  <img alt="three.js mapped as a city: folders as districts, files as buildings, imports as arcs" src="docs/screenshot-light.png">
+</picture>
 
 ## Use
 
@@ -40,7 +45,7 @@ Options:
 
 - Drag to turn, right-drag to move, scroll to zoom. `/` finds a file, `Esc` clears, `h` resets the view.
 - **Click a building**: the camera frames it with everything it uses (blue) and everything that uses it (orange). The panel, top to bottom:
-  - **Summary**: the file's own opening comment, or, with an AI key, a few sentences on what it does and why it's there.
+  - **Summary**: with your own AI key, a few sentences on what the file does and why it's there (see below).
   - **Connections** in words (and an import cycle, if it's in one), then **Uses** and **Is used by**.
   - **History** from git: created, last changed and why, how many commits, how many in the last 90 days, by how many people (renames followed). Large files that change often are flagged as hotspots.
   - **Exports** (functions, components, types) and **Packages**.
@@ -51,7 +56,7 @@ Options:
 
 ## AI summaries (optional)
 
-Add a Claude or OpenAI key from **AI summaries** in the left panel (or from a building's Summary). Then **Write a summary** asks the model, with the file's code, its comment, what the repo's docs say about it, and what it uses and what uses it. The key stays in your browser (localStorage); requests go from your browser straight to the provider, billed to your key. Summaries are kept in the browser per file and redone when the file changes.
+Add a Claude or OpenAI key from **AI summaries** in the left panel (or from a building's Summary). Then **Write a summary** asks the model, with the file's code, its opening comment, what the repo's docs say about it, and what it uses and what uses it. The key stays in your browser (localStorage); requests go from your browser straight to the provider, billed to your key. Summaries are kept in the browser per file and redone when the file changes.
 
 For that, the map holds each file's code (up to 24,000 characters a file). Make a map with `--no-source` to leave the code out, for instance before sharing a map of a private repo.
 
@@ -79,3 +84,7 @@ Imports are found with patterns, not a compiler, so very dynamic imports (built 
 - `src/history.mjs`: each file's git history, from one `git log` over the repo.
 - `src/viewer/`: the page. `city.js` lays out the city (squarified treemap), `graph.js` finds who uses whom and the cycles, `ai.js` the optional summaries, `main.js` the three.js scene and the panels. `tokens.css` and `fonts/` come from Studio G.
 - `scripts/build.mjs`: bundles the viewer with three.js into `dist/viewer.js` (esbuild); `atlas` rebuilds it when the viewer's sources change.
+
+## License
+
+MIT for the code. The fonts in `src/viewer/fonts` are under the SIL Open Font License 1.1. Made by [Studio G](https://studiog.build).

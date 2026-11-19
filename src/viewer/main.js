@@ -289,6 +289,36 @@ const lineMesh = (opacity) => {
   return l;
 };
 const allLines = lineMesh(C.dark ? 0.22 : 0.32);
+
+// The selected building keeps its colour: an ink outline around it and a pixel in the signature colour above it
+// (Studio G marks state with small square pixels).
+const outline = new THREE.LineSegments(
+  new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0)),
+  new THREE.LineBasicMaterial({ color: C.ink, fog: false }),
+);
+const pixel = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: C.sig, fog: false }));
+outline.visible = pixel.visible = false;
+scene.add(outline, pixel);
+function markSelection(sel) {
+  outline.material.color.copy(C.ink);
+  pixel.material.color.copy(C.sig);
+  let box = null;
+  if (sel?.kind === "file") {
+    const b = city.buildings[sel.i];
+    box = { x: b.x + b.w / 2, z: b.z + b.d / 2, w: b.w, d: b.d, y: b.y, h: b.h };
+  } else if (sel?.kind === "package" && city.packages) {
+    const it = city.packages.items[sel.i];
+    box = { x: it.x, z: it.z, w: it.r * 2, d: it.r * 2, y: PLATE, h: it.h };
+  }
+  outline.visible = pixel.visible = !!box;
+  if (!box) return;
+  const pad = Math.max(0.06, Math.min(box.w, box.d) * 0.05);
+  outline.scale.set(box.w + pad * 2, box.h + pad, box.d + pad * 2);
+  outline.position.set(box.x, box.y, box.z);
+  const s = Math.min(1.1, Math.max(0.35, Math.min(box.w, box.d) * 0.3));
+  pixel.scale.setScalar(s);
+  pixel.position.set(box.x, box.y + box.h + s * 0.5 + Math.max(0.6, s * 1.4), box.z);
+}
 const focusLines = lineMesh(0.95);
 const setLines = (mesh, list) => {
   const pos = [];
@@ -347,7 +377,6 @@ const paintScene = () => {
   for (let i = 0; i < N; i++) {
     let c = baseColors[i];
     if (focus && !focus.has(i)) c = dim(c);
-    if (sel?.kind === "file" && sel.i === i) c = C.ink;
     towers.setColorAt(i, c);
   }
   towers.instanceColor.needsUpdate = true;
@@ -364,13 +393,13 @@ const paintScene = () => {
     data.packages.forEach((_, p) => {
       let c = C.pkg;
       if (pkgFocus && !pkgFocus.has(p)) c = dim(c, 0.75);
-      if (sel?.kind === "package" && sel.i === p) c = C.ink;
       pkgMesh.setColorAt(p, c);
     });
     pkgMesh.instanceColor.needsUpdate = true;
   }
 
   setLines(focusLines, lines);
+  markSelection(sel);
   allLines.visible = state.lines && !sel;
   focusLines.visible = !!sel;
   pkgGroup.visible = state.packages;
@@ -564,19 +593,22 @@ function summarySection(i) {
   const hasSource = typeof f.source === "string";
   const saved = hasSource ? cachedSummary(data.name, f.path, fingerprint(f.source)) : null;
   let body;
-  if (aiState.busy === i) body = `<p class="summary muted">Writing a summary…</p>`;
-  else if (saved) {
+  if (aiState.busy === i) {
+    body = `<p class="summary muted">Writing a summary…</p>`;
+  } else if (saved) {
     body = `<p class="summary">${esc(saved.text)}</p><p class="by">Written by ${esc(PROVIDERS[saved.provider]?.name || "AI")} from the code` +
       (cfg ? ` <button class="link" type="button" data-ai-write="${i}">Rewrite</button>` : "") + `</p>`;
-  } else if (f.about) body = `<p class="summary">${inline(f.about)}</p><p class="by">From the file's own comment</p>`;
-  else body = `<p class="muted">The file doesn't describe itself.</p>`;
-  if (!saved && aiState.busy !== i && hasSource) {
-    body += `<div class="summary-actions">` + (cfg
-      ? `<button class="btn primary" type="button" data-ai-write="${i}">Write a summary</button>`
-      : `<button class="btn ghost" type="button" data-ai-setup>Add an AI key to write summaries</button>`) + `</div>`;
+  } else if (!hasSource) {
+    body = `<p class="muted">Summaries need the code, and this map was made without it.</p>`;
+  } else if (cfg) {
+    body = `<p class="muted">No summary yet.</p><div class="summary-actions"><button class="btn primary" type="button" data-ai-write="${i}">Write a summary</button></div>`;
+  } else {
+    body = `<p class="line">Add your own Claude or OpenAI key to get a few sentences on what each file does and why it's there.</p>` +
+      `<p class="note">Your key stays in this browser. It isn't shared with anyone, not even with us.</p>` +
+      `<div class="summary-actions"><button class="btn ghost" type="button" data-ai-setup>Add your key</button></div>`;
   }
   if (aiState.errorFor === i) body += `<p class="error">${esc(aiState.error)}</p>`;
-  return `<section class="first"><h3>Summary</h3>${body}</section>`;
+  return `<section><h3>Summary</h3>${body}</section>`;
 }
 
 async function writeSummary(i) {
