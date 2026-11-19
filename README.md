@@ -58,9 +58,16 @@ Options:
 
 ## AI summaries (optional)
 
-Add a Claude or OpenAI key from **AI summaries** in the left panel (or from a building's Summary). Then **Write a summary** asks the model, with the file's code, its opening comment, what the repo's docs say about it, and what it uses and what uses it. The key stays in your browser (localStorage); requests go from your browser straight to the provider, billed to your key. Summaries are kept in the browser per file and redone when the file changes.
+Add a Claude or OpenAI key from **AI summaries** in the left panel (or from a building's Summary). Then **Write a summary** asks the model, with the file's code, its opening comment, what the repo's docs say about it, and what it uses and what uses it. Summaries are kept in the browser per file and redone when the file changes.
 
-For that, the map holds each file's code (up to 24,000 characters a file). Make a map with `--no-source` to leave the code out, for instance before sharing a map of a private repo.
+Where the key lives:
+
+- **With `atlas serve`** (`npm start`): once for every project, on your computer: in the macOS keychain (as "Repo Atlas (claude)" or "(openai)"), elsewhere in `~/.config/repo-atlas/keys.json`, readable by you only. If `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` is set, it's used without asking. The page never sees the key: the local server sends the request to the provider.
+- **In a map file**: in that browser's storage, and the request goes from the browser straight to the provider.
+
+Either way, it's billed to your key and nothing goes through anyone else.
+
+For summaries, the map holds each file's code (up to 24,000 characters a file). Make a map with `--no-source` to leave the code out, for instance before sharing a map of a private repo.
 
 ## Design
 
@@ -80,7 +87,7 @@ Imports are found with patterns, not a compiler, so very dynamic imports (built 
 
 ## Layout of this repo
 
-- `bin/atlas.mjs`: the command. `src/serve.mjs` is the local server with the project picker, `src/render.mjs` turns data into the page.
+- `bin/atlas.mjs`: the command. `src/serve.mjs` is the local server with the project picker, `src/keys.mjs` keeps its AI key, `src/render.mjs` turns data into the page.
 - `src/scan.mjs`: files, lines, imports and their resolution.
 - `src/describe.mjs`: what a file is for: opening comment, doc mentions, role, exports.
 - `src/history.mjs`: each file's git history, from one `git log` over the repo.

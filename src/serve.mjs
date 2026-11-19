@@ -7,6 +7,8 @@ import path from "node:path";
 import { execFile, execFileSync } from "node:child_process";
 import { scan } from "./scan.mjs";
 import { escapeHtml, renderMap } from "./render.mjs";
+import { keyFor, remove, save, status } from "./keys.mjs";
+import { PROVIDERS, summarize } from "./viewer/ai.js";
 
 const SKIP = new Set(["node_modules", ".git", ".Trash"]);
 
@@ -39,9 +41,59 @@ export function serve({ root, port = 4317, open = false, source = true }) {
     `<!doctype html><meta charset="utf-8"><title>${escapeHtml(title)}</title>` +
     `<body style="font:15px/1.5 system-ui;margin:48px;max-width:560px"><h1 style="font-weight:500">${escapeHtml(title)}</h1><p>${text}</p><p><a href="/">Back to the map</a></p>`);
 
-  const server = http.createServer((req, res) => {
+  // The AI routes answer this server's own pages only: other sites can't send the X-Atlas header without a
+  // preflight we never approve, and their Origin wouldn't match.
+  const ours = (req) => {
+    const o = req.headers.origin;
+    return req.headers["x-atlas"] === "1" && (!o || o === `http://localhost:${port}` || o === `http://127.0.0.1:${port}`);
+  };
+  const json = (res, code, value) => send(res, code, "application/json", JSON.stringify(value));
+  const body = (req) => new Promise((resolve, reject) => {
+    let size = 0;
+    const chunks = [];
+    req.on("data", (c) => {
+      size += c.length;
+      if (size > 2_000_000) { reject(new Error("Too large.")); req.destroy(); } else chunks.push(c);
+    });
+    req.on("end", () => {
+      try { resolve(JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}")); } catch { reject(new Error("Not JSON.")); }
+    });
+  });
+
+  const ai = async (req, res, url) => {
+    if (!ours(req)) return json(res, 403, { error: "Only repo atlas's own pages can do that." });
+    if (url.pathname === "/api/ai" && req.method === "GET") return json(res, 200, status(PROVIDERS));
+    if (url.pathname === "/api/ai" && req.method === "POST") {
+      const { provider, model, key } = await body(req);
+      try {
+        save(provider, model || PROVIDERS[provider]?.model, (key || "").trim());
+      } catch (e) {
+        return json(res, 400, { error: e.message });
+      }
+      return json(res, 200, status(PROVIDERS));
+    }
+    if (url.pathname === "/api/ai" && req.method === "DELETE") {
+      remove(status(PROVIDERS).provider);
+      return json(res, 200, status(PROVIDERS));
+    }
+    if (url.pathname === "/api/summarize" && req.method === "POST") {
+      const { prompt } = await body(req);
+      const s = status(PROVIDERS);
+      const found = keyFor(s.provider);
+      if (!found) return json(res, 400, { error: "Add a key first." });
+      try {
+        return json(res, 200, await summarize({ provider: s.provider, model: s.model, key: found.key }, String(prompt || "")));
+      } catch (e) {
+        return json(res, 502, { error: e instanceof TypeError ? `Couldn't reach ${PROVIDERS[s.provider].name}. Check your connection.` : e.message });
+      }
+    }
+    return json(res, 404, { error: "Not found" });
+  };
+
+  const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, "http://localhost");
     try {
+      if (url.pathname === "/api/ai" || url.pathname === "/api/summarize") return await ai(req, res, url);
       if (url.pathname === "/") {
         const first = projects()[0];
         if (!first) return page(res, 200, "No projects here", `There are no folders in ${escapeHtml(root)}. Start atlas with another folder: <code>atlas serve ~/Code</code>.`);
