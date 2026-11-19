@@ -33,6 +33,8 @@ Options:
   --out <file>     <repo>: where to write the map (default: maps/<repo>.html in repo-atlas)
   --all            also show data and docs files nothing imports (.md, .json, …)
   --no-source      leave the code out of the map (it's there for the optional AI summaries)
+  --public         <repo>: structure only, for a map anyone may see (no code, comments, doc quotes,
+                   exports or commit messages)
   --json           <repo>: write the scanned graph as JSON instead of a map
   --ignore <dir>   <repo>: leave a folder out (repeatable), e.g. --ignore docs/`);
   process.exit(args.length ? 0 : 1);
@@ -52,7 +54,7 @@ if (positional[0] === "serve") {
     process.exit(1);
   }
   const t0 = Date.now();
-  const data = scan(repo, { ignore: values("--ignore"), all: flag("--all"), source: !flag("--no-source") });
+  const data = scan(repo, { ignore: values("--ignore"), all: flag("--all"), source: !flag("--no-source"), publicMode: flag("--public") });
   const lines = data.files.reduce((s, f) => s + f.lines, 0);
   console.log(
     `${data.name}: ${data.files.length} files, ${lines.toLocaleString("en")} lines, ` +
@@ -63,7 +65,7 @@ if (positional[0] === "serve") {
   const out = path.resolve(value("--out") || path.join(home, "maps", `${data.name}.${flag("--json") ? "json" : "html"}`));
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, flag("--json") ? JSON.stringify(data) : renderMap(data));
-  console.log(`Wrote ${out}` + (flag("--json") || flag("--no-source") ? "" : " (it holds the code, for the optional AI summaries: --no-source leaves it out)"));
+  console.log(`Wrote ${out}` + (flag("--json") || flag("--no-source") || flag("--public") ? "" : " (it holds the code, for the optional AI summaries: --no-source leaves it out)"));
   if (flag("--open") && !flag("--json")) {
     const opener = process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
     try { execFileSync(opener, [out], { stdio: "ignore" }); } catch {}

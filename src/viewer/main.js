@@ -579,7 +579,7 @@ function summarySection(i) {
     body = `<p class="summary">${esc(saved.text)}</p><p class="by">Written by ${esc(PROVIDERS[saved.provider]?.name || "AI")} from the code` +
       (cfg ? ` <button class="link" type="button" data-ai-write="${i}">Rewrite</button>` : "") + `</p>`;
   } else if (!hasSource) {
-    body = `<p class="muted">Summaries need the code, and this map was made without it.</p>`;
+    return ""; // a map made without the code (--no-source, --public) has no summaries
   } else if (cfg) {
     body = `<p class="muted">No summary yet.</p><div class="summary-actions"><button class="btn primary" type="button" data-ai-write="${i}">Write a summary</button></div>`;
   } else {
@@ -655,10 +655,8 @@ function renderAIState() {
   const cfg = loadAI();
   const hasSource = data.files.some((f) => typeof f.source === "string");
   const btn = document.getElementById("ai-change");
-  if (!hasSource) {
-    document.getElementById("ai-state").textContent = "Off: this map was made without the code";
-    btn.hidden = true;
-  } else {
+  document.getElementById("ai-row").hidden = !hasSource;
+  if (hasSource) {
     document.getElementById("ai-state").textContent = cfg ? `${PROVIDERS[cfg.provider].name} · ${cfg.model}` : "Off";
     btn.textContent = cfg ? "Change" : "Add a key";
   }

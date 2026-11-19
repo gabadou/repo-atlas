@@ -34,7 +34,9 @@ const RESOLVE_EXTS = [
 
 const BUILTINS = new Set(builtinModules.flatMap((m) => [m, `node:${m}`]));
 
-export function scan(root, { ignore = [], all: includeAll = false, source = true } = {}) {
+// publicMode: structure only, for a map anyone may see: no code, comments, doc quotes, exports or commit messages.
+export function scan(root, { ignore = [], all: includeAll = false, source = true, publicMode = false } = {}) {
+  if (publicMode) source = false;
   root = path.resolve(root);
   const all = listFiles(root).filter((p) => {
     const parts = p.split("/");
@@ -122,15 +124,18 @@ export function scan(root, { ignore = [], all: includeAll = false, source = true
       if (code.length < f.text.length) out.cut = true;
       sourceLeft -= code.length;
     }
-    const about = openingComment(f.text, f.ext);
+    const about = publicMode ? null : openingComment(f.text, f.ext);
     if (about) out.about = about;
     const role = roleOf(f.path, f.text, roots);
     if (role) Object.assign(out, role);
-    const ex = exportsOf(f.text, f.ext);
+    const ex = publicMode ? [] : exportsOf(f.text, f.ext);
     if (ex.length) out.exports = ex;
-    const d = mentions.get(f.path);
+    const d = publicMode ? null : mentions.get(f.path);
     if (d) out.docs = d;
-    if (git?.files[f.path]) out.git = git.files[f.path];
+    if (git?.files[f.path]) {
+      out.git = { ...git.files[f.path] };
+      if (publicMode) delete out.git.msg;
+    }
     return out;
   };
 

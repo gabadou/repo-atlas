@@ -37,6 +37,7 @@ Options:
 | `--all` | also show data and docs files nothing imports (`.md`, `.json`, …) |
 | `--ignore <dir>` | one map: leave a folder out (repeatable) |
 | `--no-source` | leave the code out of the map (it's there for the optional AI summaries) |
+| `--public` | one map: structure only, for a map anyone may see: no code, comments, doc quotes, exports or commit messages |
 | `--json` | one map: write the scanned graph as JSON instead |
 
 `ATLAS_DEBUG=1` prints every import that couldn't be resolved. `npm link` gives you an `atlas` command anywhere.
