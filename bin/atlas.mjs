@@ -19,7 +19,7 @@ const value = (name) => {
   return i >= 0 ? args[i + 1] : undefined;
 };
 const values = (name) => args.flatMap((a, i) => (a === name ? [args[i + 1]] : []));
-const positional = args.filter((a, i) => !a.startsWith("-") && !["--out", "--ignore", "--port"].includes(args[i - 1]));
+const positional = args.filter((a, i) => !a.startsWith("-") && !["--out", "--ignore", "--port", "--back", "--back-label"].includes(args[i - 1]));
 
 if (flag("-h") || flag("--help") || !args.length) {
   console.log(`Usage:
@@ -35,6 +35,7 @@ Options:
   --no-source      leave the code out of the map (it's there for the optional AI summaries)
   --public         <repo>: structure only, for a map anyone may see (no code, comments, doc quotes,
                    exports or commit messages)
+  --back <url>     <repo>: a link back at the top of the map (with --back-label "Back to the site")
   --json           <repo>: write the scanned graph as JSON instead of a map
   --ignore <dir>   <repo>: leave a folder out (repeatable), e.g. --ignore docs/`);
   process.exit(args.length ? 0 : 1);
@@ -55,6 +56,7 @@ if (positional[0] === "serve") {
   }
   const t0 = Date.now();
   const data = scan(repo, { ignore: values("--ignore"), all: flag("--all"), source: !flag("--no-source"), publicMode: flag("--public") });
+  if (value("--back")) data.back = { href: value("--back"), label: value("--back-label") || "Back" };
   const lines = data.files.reduce((s, f) => s + f.lines, 0);
   console.log(
     `${data.name}: ${data.files.length} files, ${lines.toLocaleString("en")} lines, ` +

@@ -38,13 +38,14 @@ Options:
 | `--ignore <dir>` | one map: leave a folder out (repeatable) |
 | `--no-source` | leave the code out of the map (it's there for the optional AI summaries) |
 | `--public` | one map: structure only, for a map anyone may see: no code, comments, doc quotes, exports or commit messages |
+| `--back <url>` | one map: a link back at the top of the map, labelled with `--back-label` |
 | `--json` | one map: write the scanned graph as JSON instead |
 
 `ATLAS_DEBUG=1` prints every import that couldn't be resolved. `npm link` gives you an `atlas` command anywhere.
 
 ## In the map
 
-- Drag to turn, right-drag to move, scroll to zoom. `/` finds a file, `Esc` clears, `h` resets the view.
+- Like Studio G's office: scroll to move across the city, pinch (or Ctrl/⌘ + scroll) to zoom at the pointer, drag to turn. With a mouse, right-drag also moves. Arrow keys move, `+` and `-` zoom, `/` finds a file, `Esc` clears, `h` resets the view.
 - **Click a building**: the camera frames it with everything it uses (blue) and everything that uses it (orange). The panel, top to bottom:
   - **Summary**: with your own AI key, a few sentences on what the file does and why it's there (see below).
   - **Connections** in words (and an import cycle, if it's in one), then **Uses** and **Is used by**.
@@ -83,7 +84,11 @@ Imports are found with patterns, not a compiler, so very dynamic imports (built 
 - `src/scan.mjs`: files, lines, imports and their resolution.
 - `src/describe.mjs`: what a file is for: opening comment, doc mentions, role, exports.
 - `src/history.mjs`: each file's git history, from one `git log` over the repo.
-- `src/viewer/`: the page. `city.js` lays out the city (squarified treemap), `graph.js` finds who uses whom and the cycles, `ai.js` the optional summaries, `main.js` the three.js scene and the panels. `tokens.css` and `fonts/` come from Studio G.
+- `src/viewer/`: the page. `main.js` only wires the parts together:
+  - the data: `city.js` lays out the city (squarified treemap), `graph.js` finds who uses whom and the cycles;
+  - the 3D: `scene.js` (renderer, camera, lights), `city3d.js` (plates, buildings, packages, painted names), `lines.js` (import arcs), `paint.js` (colours for the current selection), `colours.js` (colours from the tokens), `navigation.js` (scroll, pinch, drag, flights), `pointer.js` (hover and click);
+  - the panels: `sidebar.js` (left), `panel.js` (right), `lists.js`, `summary.js` with `ai.js` (the optional summaries), `picker.js` (the project picker), `util.js`.
+  - `tokens.css` and `fonts/` come from Studio G.
 - `scripts/build.mjs`: bundles the viewer with three.js into `dist/viewer.js` (esbuild); `atlas` rebuilds it when the viewer's sources change.
 
 ## License

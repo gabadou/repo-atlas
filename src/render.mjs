@@ -10,7 +10,7 @@ const viewer = (...p) => path.join(home, "src", "viewer", ...p);
 
 function bundle() {
   const out = path.join(home, "dist", "viewer.js");
-  const sources = ["main.js", "city.js", "graph.js", "ai.js", "picker.js"].map((p) => viewer(p)).filter((p) => fs.existsSync(p));
+  const sources = fs.readdirSync(viewer()).filter((f) => f.endsWith(".js")).map((f) => viewer(f));
   const stale = !fs.existsSync(out) || sources.some((s) => fs.statSync(s).mtimeMs > fs.statSync(out).mtimeMs);
   if (stale) execFileSync(process.execPath, [path.join(home, "scripts", "build.mjs")], { stdio: "inherit" });
   return fs.readFileSync(out, "utf8");
