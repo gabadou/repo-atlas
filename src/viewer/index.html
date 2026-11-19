@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<script>
+  // The reader's theme choice, applied before paint (follows the system until they pick one).
+  try { const t = localStorage.getItem("sg-theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch {}
+</script>
+<style>/*{{css}}*/</style>
+</head>
+<body>
+<canvas id="scene" aria-label="3D map of the repository"></canvas>
+<div id="areas"></div>
+
+<aside class="panel left">
+  <div class="top">
+    <p class="mark">REPO ATLAS<i></i></p>
+    <button class="theme" type="button" id="theme" aria-label="Switch light or dark mode" title="Switch light or dark mode">
+      <svg class="eclipse" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+        <defs><mask id="eclipse-mask"><rect width="16" height="16" fill="white" /><circle class="eclipse-shade" cx="11" cy="5" r="5" fill="black" /></mask></defs>
+        <circle class="eclipse-core" cx="8" cy="8" r="3.5" fill="currentColor" mask="url(#eclipse-mask)" />
+        <path class="eclipse-rays" d="M8 1v1.4M8 13.6V15M1 8h1.4M13.6 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none" />
+      </svg>
+    </button>
+  </div>
+  <header>
+    <h1><button class="repo" id="picker-btn" type="button" aria-haspopup="true" aria-expanded="false" disabled><span id="repo"></span><svg class="chev" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3.5 5.5 7 9l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></h1>
+    <p class="meta" id="meta"></p>
+  </header>
+  <div class="stats" id="stats"></div>
+  <div class="search">
+    <input id="search" type="search" placeholder="Find a file" autocomplete="off" spellcheck="false" aria-label="Find a file">
+    <kbd>/</kbd>
+  </div>
+  <ul class="files" id="results"></ul>
+  <section>
+    <h3>Colour by</h3>
+    <div class="seg" id="colour" role="group" aria-label="Colour by">
+      <button data-mode="area" aria-pressed="true">Folder</button>
+      <button data-mode="type" aria-pressed="false">Type</button>
+      <button data-mode="used" aria-pressed="false">Use</button>
+    </div>
+    <ul class="legend" id="legend"></ul>
+  </section>
+  <section>
+    <h3>Show</h3>
+    <label><input type="checkbox" id="show-lines" checked> Import lines</label>
+    <label><input type="checkbox" id="show-packages" checked> Packages</label>
+    <label><input type="checkbox" id="show-labels" checked> Folder names</label>
+  </section>
+  <section id="ai-row">
+    <h3>AI summaries</h3>
+    <div class="ai-status"><span id="ai-state"></span><button class="link" type="button" data-ai-setup id="ai-change"></button></div>
+  </section>
+  <div id="insights"></div>
+</aside>
+
+<aside class="panel right" id="detail" hidden>
+  <button class="close" id="close" aria-label="Close">×</button>
+  <div class="body"></div>
+</aside>
+
+<div class="bar">
+  <button class="btn ghost" id="home">Reset view</button>
+  <span class="hint">Drag to turn · right-drag to move · scroll to zoom · click a building or a folder</span>
+  <span class="key"><i class="k-used-by"></i>importer <i class="k-uses"></i>imported</span>
+</div>
+<div id="tip" hidden></div>
+
+<div class="popover" id="picker" hidden>
+  <input type="search" id="picker-search" placeholder="Find a project" autocomplete="off" spellcheck="false" aria-label="Find a project">
+  <ul class="projects" id="picker-list"></ul>
+  <div class="picker-foot">
+    <button class="btn ghost" type="button" id="picker-browse" hidden>Choose a folder…</button>
+    <form id="picker-path"><input type="text" name="path" placeholder="Or type a path, like ~/Code/other" autocomplete="off" spellcheck="false" aria-label="Path to a folder"></form>
+  </div>
+</div>
+<div id="opening" hidden><p>Mapping <b></b>…</p></div>
+
+<dialog id="ai-dialog">
+  <form method="dialog" id="ai-form">
+    <h2>Add an AI key</h2>
+    <p>Summaries say in a few sentences what each file does and why it's there. They're optional: the map works without them.</p>
+    <div class="seg" id="ai-provider" role="radiogroup" aria-label="Provider">
+      <label><input type="radio" name="provider" value="claude" checked> Claude</label>
+      <label><input type="radio" name="provider" value="openai"> OpenAI</label>
+    </div>
+    <label class="field">API key<input type="password" name="key" autocomplete="off" spellcheck="false" placeholder="Paste your key"></label>
+    <label class="field">Model<input type="text" name="model" autocomplete="off" spellcheck="false"></label>
+    <p class="note">Your key stays in this browser. When you ask for a summary, the file's code goes from your browser straight to the provider, billed to your key.</p>
+    <p class="error" id="ai-error" hidden></p>
+    <div class="actions">
+      <button class="btn ghost" type="button" id="ai-remove" hidden>Remove key</button>
+      <span></span>
+      <button class="btn ghost" type="button" id="ai-cancel">Cancel</button>
+      <button class="btn primary" type="submit">Save key</button>
+    </div>
+  </form>
+</dialog>
+
+<script>window.ATLAS_SERVER = {{server}};</script>
+<script type="application/json" id="atlas-data">{{data}}</script>
+<script>/*{{js}}*/</script>
+</body>
+</html>

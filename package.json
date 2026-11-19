@@ -1,0 +1,22 @@
+{
+  "name": "repo-atlas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A 3D map of a repo’s architecture: folders as districts, files as buildings, imports as arcs.",
+  "type": "module",
+  "bin": {
+    "atlas": "bin/atlas.mjs"
+  },
+  "scripts": {
+    "start": "node bin/atlas.mjs serve --open",
+    "serve": "node bin/atlas.mjs serve",
+    "build": "node scripts/build.mjs",
+    "map": "node bin/atlas.mjs"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}
