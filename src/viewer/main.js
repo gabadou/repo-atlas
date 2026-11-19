@@ -290,35 +290,14 @@ const lineMesh = (opacity) => {
 };
 const allLines = lineMesh(C.dark ? 0.22 : 0.32);
 
-// The selected building keeps its colour: an ink outline around it and a pixel in the signature colour above it
-// (Studio G marks state with small square pixels).
-const outline = new THREE.LineSegments(
-  new THREE.EdgesGeometry(new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0)),
-  new THREE.LineBasicMaterial({ color: C.ink, fog: false }),
-);
-const pixel = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: C.sig, fog: false }));
-outline.visible = pixel.visible = false;
-scene.add(outline, pixel);
-function markSelection(sel) {
-  outline.material.color.copy(C.ink);
-  pixel.material.color.copy(C.sig);
-  let box = null;
-  if (sel?.kind === "file") {
-    const b = city.buildings[sel.i];
-    box = { x: b.x + b.w / 2, z: b.z + b.d / 2, w: b.w, d: b.d, y: b.y, h: b.h };
-  } else if (sel?.kind === "package" && city.packages) {
-    const it = city.packages.items[sel.i];
-    box = { x: it.x, z: it.z, w: it.r * 2, d: it.r * 2, y: PLATE, h: it.h };
-  }
-  outline.visible = pixel.visible = !!box;
-  if (!box) return;
-  const pad = Math.max(0.06, Math.min(box.w, box.d) * 0.05);
-  outline.scale.set(box.w + pad * 2, box.h + pad, box.d + pad * 2);
-  outline.position.set(box.x, box.y, box.z);
-  const s = Math.min(1.1, Math.max(0.35, Math.min(box.w, box.d) * 0.3));
-  pixel.scale.setScalar(s);
-  pixel.position.set(box.x, box.y + box.h + s * 0.5 + Math.max(0.6, s * 1.4), box.z);
-}
+// The selected building keeps its colour, made more saturated: deeper by day, brighter After hours.
+const emphasize = (c) => {
+  const hsl = {};
+  c.getHSL(hsl);
+  return C.dark
+    ? new THREE.Color().setHSL(hsl.h, Math.min(1, hsl.s * 1.25 + 0.1), Math.min(0.84, hsl.l + 0.12))
+    : new THREE.Color().setHSL(hsl.h, Math.min(1, hsl.s * 1.6 + 0.25), Math.max(0.42, hsl.l - 0.3));
+};
 const focusLines = lineMesh(0.95);
 const setLines = (mesh, list) => {
   const pos = [];
@@ -377,6 +356,7 @@ const paintScene = () => {
   for (let i = 0; i < N; i++) {
     let c = baseColors[i];
     if (focus && !focus.has(i)) c = dim(c);
+    if (sel?.kind === "file" && sel.i === i) c = emphasize(c);
     towers.setColorAt(i, c);
   }
   towers.instanceColor.needsUpdate = true;
@@ -392,14 +372,14 @@ const paintScene = () => {
   if (pkgMesh) {
     data.packages.forEach((_, p) => {
       let c = C.pkg;
-      if (pkgFocus && !pkgFocus.has(p)) c = dim(c, 0.75);
+      if (pkgFocus && !pkgFocus.has(p)) c = dim(c);
+      if (sel?.kind === "package" && sel.i === p) c = emphasize(C.sig);
       pkgMesh.setColorAt(p, c);
     });
     pkgMesh.instanceColor.needsUpdate = true;
   }
 
   setLines(focusLines, lines);
-  markSelection(sel);
   allLines.visible = state.lines && !sel;
   focusLines.visible = !!sel;
   pkgGroup.visible = state.packages;
