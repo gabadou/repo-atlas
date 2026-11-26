@@ -7,12 +7,17 @@ export function createSidebar(app) {
   const { data, G, N, state, lists, palette } = app;
   const { fileLink, list } = lists;
 
-  // A way back to the page that linked here (Studio G's "Look inside").
+  // A way back to the page that linked here (Studio G's "See how it's built").
   if (data.back?.href) {
     const back = $("back");
     back.href = data.back.href;
-    back.textContent = `${data.back.label || "Back"} →`;
     back.hidden = false;
+    // Came from the same site (a room's map stand, the Repo Atlas shelf…): go back to exactly where you were.
+    // Opened directly: the link goes to --back, named by --back-label.
+    let fromSite = false;
+    try { fromSite = !!document.referrer && new URL(document.referrer).origin === location.origin && history.length > 1; } catch {}
+    back.textContent = fromSite ? "← Back" : `← ${data.back.label || "Back"}`;
+    if (fromSite) back.addEventListener("click", (e) => { e.preventDefault(); history.back(); });
   }
 
   // Name and figures.
