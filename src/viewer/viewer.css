@@ -234,10 +234,34 @@ dialog .actions span { flex: 1; }
 [data-theme="dark"] .eclipse-core { r: 6px; }
 [data-theme="dark"] .eclipse-rays { opacity: 0; transform: rotate(45deg) scale(.6); }
 
+.grab { display: none; } /* a sheet's handle: phones only */
+
+/* Phones: the city gets the screen. A top row of 40px buttons (the way back, Reset view, the theme), as on Studio G's
+   site, and the panels as sheets at the bottom (sheet.js sets their height and moves them). */
 @media (max-width: 760px) {
-  .panel.left { width: auto; right: var(--space-3); bottom: auto; max-height: 42vh; }
-  .panel.right { width: auto; left: var(--space-3); top: auto; height: 50vh; }
-  .bar .hint { display: none; }
+  .back { position: fixed; top: var(--space-3); left: var(--space-3); z-index: 3; height: 40px; display: inline-flex; align-items: center; margin: 0; padding: 0 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); visibility: visible; }
+  .theme { position: fixed; top: var(--space-3); right: var(--space-3); z-index: 3; width: 40px; height: 40px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); color: var(--ink); visibility: visible; }
+  .bar { top: var(--space-3); bottom: auto; left: auto; right: calc(var(--space-3) + 48px); }
+  .bar .btn { height: 40px; padding: 0 14px; border-radius: var(--radius-lg); }
+  .bar .hint, .bar .key { display: none; }
+
+  .panel.left, .panel.right {
+    top: auto; left: var(--space-3); right: var(--space-3); bottom: calc(var(--space-3) + env(safe-area-inset-bottom)); width: auto; height: auto; max-height: none;
+    padding-top: 26px; border-radius: 16px; box-shadow: var(--shadow-float); overscroll-behavior: contain;
+    transition: height 320ms cubic-bezier(.2, .8, .2, 1);
+  }
+  .panel.is-dragging { transition: none; }
+  .panel[data-snap="peek"], .panel[data-snap="half"] { overflow: hidden; }
+  .grab { display: block; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 72px; height: 24px; touch-action: none; cursor: grab; }
+  .grab::before { content: ""; display: block; width: 36px; height: 4px; margin: 10px auto 0; border-radius: 2px; background: var(--line); }
+  .top { margin: 0 0 6px; }
+  h1 { font-size: 28px; line-height: 32px; }
+  .stats { margin: var(--space-3) 0 var(--space-4); }
+  /* A building's sheet takes the project's place (the top row stays). */
+  .detail-open .panel.left { visibility: hidden; }
+  .panel.right .close { top: 18px; right: 12px; }
+  /* Folder names: smaller, and a long one is cut short (its full path is in its title). */
+  .area button { font-size: 10px; line-height: 13px; padding: 2px 6px; max-width: 132px; overflow: hidden; text-overflow: ellipsis; }
 }
 @media (prefers-reduced-motion: reduce) {
   .eclipse-shade, .eclipse-core, .eclipse-rays { transition: none; }

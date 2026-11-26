@@ -62,22 +62,43 @@ export function createCity3d(app) {
   const labelGroup = new THREE.Group();
   scene.add(labelGroup);
   const areaPaths = new Set(app.palette.areas.map((a) => a.path));
-  const floating = city.districts.filter((d) => areaPaths.has(d.path)).map((d) => {
+  // Biggest folders first: when two names would overlap, the smaller folder's name is left out until there's room.
+  const order = new Map(app.palette.areas.map((a, i) => [a.path, i]));
+  const floating = city.districts.filter((d) => areaPaths.has(d.path)).sort((a, b) => order.get(a.path) - order.get(b.path)).map((d) => {
     const el = document.createElement("div");
     el.className = "area";
-    el.innerHTML = `<button data-dir="${esc(d.path)}">${esc(d.name)}</button>`;
+    el.innerHTML = `<button data-dir="${esc(d.path)}" title="${esc(d.path)}">${esc(d.name)}</button>`;
     document.getElementById("areas").append(el);
-    return { el, at: new THREE.Vector3(d.x + d.pad, d.top, d.z + d.d - d.pad * 0.5) };
+    return { el, at: new THREE.Vector3(d.x + d.pad, d.top, d.z + d.d - d.pad * 0.5), size: null };
   });
+  // Each name's size, measured once (again when the screen or the font changes).
+  const measure = () => { for (const f of floating) f.size = null; };
+  addEventListener("resize", measure);
+  document.fonts?.ready.then(measure);
   const v3 = new THREE.Vector3();
   const placeFloating = () => {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
+    const taken = [];
     for (const f of floating) {
       v3.copy(f.at).project(camera);
-      const off = v3.z > 1 || !app.state.labels;
+      let off = v3.z > 1 || !app.state.labels;
+      if (!off) {
+        const x = ((v3.x + 1) / 2) * w;
+        const y = ((1 - v3.y) / 2) * h;
+        if (!f.size) {
+          f.el.hidden = false;
+          const b = f.el.firstElementChild;
+          f.size = [b.offsetWidth, b.offsetHeight];
+        }
+        const r = [x - 2, y + 6, x - 2 + f.size[0], y + 6 + f.size[1]]; // where the button sits (its CSS nudge)
+        off = taken.some((t) => r[0] < t[2] + 4 && r[2] + 4 > t[0] && r[1] < t[3] + 2 && r[3] + 2 > t[1]);
+        if (!off) {
+          taken.push(r);
+          f.el.style.transform = `translate(${x}px, ${y}px)`;
+        }
+      }
       f.el.hidden = off;
-      if (!off) f.el.style.transform = `translate(${((v3.x + 1) / 2) * w}px, ${((1 - v3.y) / 2) * h}px)`;
     }
   };
 

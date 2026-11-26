@@ -14,6 +14,7 @@ import { createPanel } from "./panel.js";
 import { createSummary } from "./summary.js";
 import { createSidebar } from "./sidebar.js";
 import { initPicker } from "./picker.js";
+import { createSheets } from "./sheet.js";
 
 const data = JSON.parse(document.getElementById("atlas-data").textContent);
 const tree = buildTree(data.files);
@@ -39,6 +40,7 @@ app.panel = createPanel(app);
 app.pointer = createPointer(app);
 app.picker = initPicker();
 app.sidebar = createSidebar(app);
+app.sheets = createSheets(app);
 
 // The theme switched: every colour is read again from the tokens.
 app.applyTheme = () => {

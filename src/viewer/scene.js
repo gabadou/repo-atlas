@@ -1,5 +1,6 @@
 // The renderer, the camera and the lights. The canvas is transparent: the page's dotted canvas shows through.
 import * as THREE from "three";
+import { TOP } from "./sheet.js";
 
 const LEFT_PANEL = 324;
 const RIGHT_PANEL = 352;
@@ -30,17 +31,20 @@ export function createScene(app) {
   };
   applyTheme();
 
-  // Keeps the picture centred in the space between the panels.
+  // Keeps the picture centred in the space between the panels: side by side on a wide screen; on a phone, between
+  // the top row and the sheet at the bottom (sheet.js).
   const resize = () => {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
     renderer.setSize(w, h, false);
     const rightOpen = !document.getElementById("detail").hidden;
     const shift = w > 760 ? (LEFT_PANEL - (rightOpen ? RIGHT_PANEL : 0)) / 2 : 0;
-    const full = w + Math.abs(shift) * 2;
-    if (shift) camera.setViewOffset(full, h, shift < 0 ? -shift * 2 : 0, 0, w, h);
+    const shiftY = w > 760 ? 0 : (TOP - (app.sheets?.reserved() ?? 0)) / 2;
+    const fullW = w + Math.abs(shift) * 2;
+    const fullH = h + Math.abs(shiftY) * 2;
+    if (shift || shiftY) camera.setViewOffset(fullW, fullH, shift < 0 ? -shift * 2 : 0, shiftY < 0 ? -shiftY * 2 : 0, w, h);
     else camera.clearViewOffset();
-    camera.aspect = full / h;
+    camera.aspect = fullW / fullH;
     camera.updateProjectionMatrix();
   };
   addEventListener("resize", resize);

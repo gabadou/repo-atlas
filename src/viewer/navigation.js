@@ -10,6 +10,7 @@ const GROUND = new THREE.Plane(UP, 0);
 
 export function createNavigation(app) {
   const { camera, canvas, size } = app.view;
+  const fog = app.view.scene.fog;
   const { city } = app;
 
   // Drag turns (left button, one finger); right-drag and two fingers move across the ground.
@@ -136,9 +137,35 @@ export function createNavigation(app) {
   const home = (now) => {
     const b = city.bounds;
     const extra = city.packages && app.state.packages ? city.packages.w + 4 : 0;
+    if (portrait()) return homePortrait(now, b);
     const c = new THREE.Vector3(b.x + (b.w + extra) / 2, 0, 0);
     const dist = (fitDistance(Math.hypot(b.w + extra, b.d) / 2) * 0.9) / Math.min(1, camera.aspect);
     fly(c, c.clone().add(new THREE.Vector3(-0.12, 0.62, 0.78).normalize().multiplyScalar(dist)), now);
+  };
+  // On a tall, narrow screen (a phone): from higher up, so the city's depth fills the height, and as close as it
+  // can be with every corner of the city (packages included) still in the picture.
+  const portrait = () => camera.aspect < 0.8;
+  const homePortrait = (now, b) => {
+    const tall = city.buildings.reduce((m, k) => Math.max(m, k.y + k.h), 0);
+    // The packages' district may run off to the right: the city itself is what has to fit.
+    const x0 = b.x, x1 = b.x + b.w, z0 = b.z, z1 = b.z + b.d;
+    const corners = [];
+    for (const x of [x0, x1]) for (const y of [0, tall]) for (const z of [z0, z1]) corners.push(new THREE.Vector3(x, y, z));
+    const c = new THREE.Vector3((x0 + x1) / 2, 0, (z0 + z1) / 2);
+    const dir = new THREE.Vector3(-0.12, 0.86, 0.5).normalize();
+    const was = { p: camera.position.clone(), q: camera.quaternion.clone() };
+    const fits = (dist) => {
+      camera.position.copy(c).addScaledVector(dir, dist);
+      camera.lookAt(c);
+      camera.updateMatrixWorld();
+      return corners.every((k) => { const v = k.clone().project(camera); return Math.abs(v.x) <= 0.96 && Math.abs(v.y) <= 0.9 && v.z < 1; });
+    };
+    let lo = controls.minDistance, hi = size * 6;
+    for (let i = 0; i < 24; i++) { const mid = (lo + hi) / 2; if (fits(mid)) hi = mid; else lo = mid; }
+    camera.position.copy(was.p);
+    camera.quaternion.copy(was.q);
+    camera.updateMatrixWorld();
+    fly(c, c.clone().addScaledVector(dir, hi), now);
   };
 
   // A file with everything it uses and everything that uses it, leaning towards the file itself.
@@ -152,11 +179,11 @@ export function createNavigation(app) {
     }
     const b = city.buildings[i];
     const c = box.getCenter(new THREE.Vector3()).lerp(new THREE.Vector3(b.x + b.w / 2, b.y + b.h / 2, b.z + b.d / 2), 0.35);
-    flyTo(c, Math.max(24, fitDistance(box.getSize(new THREE.Vector3()).length() / 2) * 0.85));
+    flyTo(c, Math.max(24, fitDistance(box.getSize(new THREE.Vector3()).length() / 2) * 0.85) / Math.min(1, camera.aspect * 1.6));
   };
 
   const frameDir = (d) => {
-    flyTo(new THREE.Vector3(d.x + d.w / 2, d.top + 2, d.z + d.d / 2), Math.max(30, fitDistance(Math.hypot(d.w, d.d) / 2) * 1.7));
+    flyTo(new THREE.Vector3(d.x + d.w / 2, d.top + 2, d.z + d.d / 2), Math.max(30, fitDistance(Math.hypot(d.w, d.d) / 2) * 1.7) / Math.min(1, camera.aspect * 1.6));
   };
 
   // Called every frame.
@@ -169,6 +196,9 @@ export function createNavigation(app) {
       if (t === 1) flight = null;
     }
     controls.update();
+    const d = distance();
+    fog.near = Math.max(size * 1.8, d * 1.1);
+    fog.far = Math.max(size * 4.5, d * 2.8);
   };
 
   return { controls, update, home, frameFile, frameDir };

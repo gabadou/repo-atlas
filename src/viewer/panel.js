@@ -118,7 +118,9 @@ export function createPanel(app) {
       body.innerHTML = sel.kind === "file" ? fileHtml(sel.i) : sel.kind === "dir" ? dirHtml(sel) : packageHtml(sel.i);
       detail.hidden = false;
       body.scrollTop = 0;
+      detail.scrollTop = 0;
     }
+    app.sheets?.detail(!!sel);
     app.view.resize();
   };
 
